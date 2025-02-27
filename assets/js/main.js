@@ -4,15 +4,38 @@ document.addEventListener("DOMContentLoaded", function () {
   fileInputs.forEach((input) => {
     input.addEventListener("change", function () {
       const previewContainer = document.querySelector(".media-preview");
-      let previewElement = document.querySelector(".media-preview-element");
+
+      // If preview container doesn't exist in current context, return
+      if (!previewContainer) return;
+
+      let previewElement;
+
+      // Handle different contexts (posts vs chat)
+      if (document.querySelector(".media-preview-element")) {
+        previewElement = document.querySelector(".media-preview-element");
+
+        // Clear existing content if it's a container element
+        if (
+          previewElement.tagName !== "IMG" &&
+          previewElement.tagName !== "VIDEO"
+        ) {
+          while (previewElement.firstChild) {
+            previewElement.removeChild(previewElement.firstChild);
+          }
+        }
+      } else {
+        previewElement = document.querySelector(
+          ".media-preview img, .media-preview video"
+        );
+      }
 
       // Disable other file inputs when one is selected
       const photoInput = document.querySelector("input[name='photo']");
       const videoInput = document.querySelector("input[name='video']");
 
-      if (this.name === "photo") {
+      if (this.name === "photo" && videoInput) {
         videoInput.disabled = true;
-      } else if (this.name === "video") {
+      } else if (this.name === "video" && photoInput) {
         photoInput.disabled = true;
       }
 
@@ -24,30 +47,66 @@ document.addEventListener("DOMContentLoaded", function () {
           previewContainer.style.display = "block";
 
           if (file.type.startsWith("image/")) {
-            if (!previewElement || previewElement.tagName === "VIDEO") {
-              // If no preview element or current is video, create an image
-              if (previewElement) {
-                previewElement.remove();
-              }
+            // Handle image preview
+            if (previewElement && previewElement.tagName === "IMG") {
+              // Update existing image
+              previewElement.src = e.target.result;
+            } else if (previewElement && previewElement.tagName === "VIDEO") {
+              // Replace video with image
               const img = document.createElement("img");
               img.className = "media-preview-element";
-              previewContainer.appendChild(img);
+              img.src = e.target.result;
+              previewElement.parentNode.replaceChild(img, previewElement);
               previewElement = img;
+            } else if (
+              previewElement &&
+              previewElement.tagName !== "IMG" &&
+              previewElement.tagName !== "VIDEO"
+            ) {
+              // Add to container
+              const img = document.createElement("img");
+              img.src = e.target.result;
+              img.className = "img-fluid rounded";
+              previewElement.appendChild(img);
+            } else {
+              // Create new image if no preview element exists
+              const img = document.createElement("img");
+              img.className = "media-preview-element";
+              img.src = e.target.result;
+              previewContainer.appendChild(img);
             }
-            previewElement.src = e.target.result;
           } else if (file.type.startsWith("video/")) {
-            if (!previewElement || previewElement.tagName === "IMG") {
-              // If no preview element or current is image, create a video
-              if (previewElement) {
-                previewElement.remove();
-              }
+            // Handle video preview
+            if (previewElement && previewElement.tagName === "VIDEO") {
+              // Update existing video
+              previewElement.src = e.target.result;
+            } else if (previewElement && previewElement.tagName === "IMG") {
+              // Replace image with video
               const video = document.createElement("video");
               video.className = "media-preview-element";
               video.controls = true;
-              previewContainer.appendChild(video);
+              video.src = e.target.result;
+              previewElement.parentNode.replaceChild(video, previewElement);
               previewElement = video;
+            } else if (
+              previewElement &&
+              previewElement.tagName !== "IMG" &&
+              previewElement.tagName !== "VIDEO"
+            ) {
+              // Add to container
+              const video = document.createElement("video");
+              video.src = e.target.result;
+              video.controls = true;
+              video.className = "img-fluid rounded";
+              previewElement.appendChild(video);
+            } else {
+              // Create new video if no preview element exists
+              const video = document.createElement("video");
+              video.className = "media-preview-element";
+              video.controls = true;
+              video.src = e.target.result;
+              previewContainer.appendChild(video);
             }
-            previewElement.src = e.target.result;
           }
         };
 
@@ -61,9 +120,30 @@ document.addEventListener("DOMContentLoaded", function () {
   if (removeMediaBtn) {
     removeMediaBtn.addEventListener("click", function () {
       const previewContainer = document.querySelector(".media-preview");
+      const previewElement = document.querySelector(
+        ".media-preview-element, .media-preview img, .media-preview video"
+      );
       const fileInputs = document.querySelectorAll(".file-input");
 
-      previewContainer.style.display = "none";
+      if (previewContainer) {
+        previewContainer.style.display = "none";
+      }
+
+      if (previewElement) {
+        if (
+          previewElement.tagName === "IMG" ||
+          previewElement.tagName === "VIDEO"
+        ) {
+          // For direct elements, remove src
+          previewElement.src = "";
+        } else {
+          // For container elements, remove children
+          while (previewElement.firstChild) {
+            previewElement.removeChild(previewElement.firstChild);
+          }
+        }
+      }
+
       fileInputs.forEach((input) => {
         input.value = "";
         input.disabled = false; // Re-enable all inputs

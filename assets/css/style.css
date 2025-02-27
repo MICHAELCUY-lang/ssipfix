@@ -349,4 +349,181 @@ body {
     color: #6c757d;
     border-radius: 10px;
     margin-left: 0.5rem;
-}x
+};
+
+/* Add these styles to assets/css/style.css */
+
+/* Chat Media Styles */
+.chat-media img, 
+.chat-media video {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    display: block;
+}
+
+.media-preview {
+    position: relative;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f0f2f5;
+    padding: 10px;
+}
+
+.media-preview-element img,
+.media-preview-element video {
+    max-width: 100%;
+    max-height: 150px;
+    display: block;
+    margin: 0 auto;
+}
+
+.remove-media-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1;
+}
+
+/* For file input buttons in chat */
+.dropdown-item {
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f2f5;
+}
+
+/* Tambahkan style ini ke assets/css/style.css */
+
+/* Media button styles */
+.input-group .btn-light {
+    min-width: 40px;
+    max-width: 40px;
+    padding: 0;
+    transition: background-color 0.2s;
+}
+
+.input-group .btn-light:hover {
+    background-color: #e2e6ea;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 576px) {
+    .input-group .btn-light {
+        min-width: 36px;
+        max-width: 36px;
+    }
+}
+
+/* Preview container adjustments */
+.media-preview {
+    position: relative;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f0f2f5;
+    padding: 10px;
+}
+
+.media-preview-element img,
+.media-preview-element video {
+    max-width: 100%;
+    max-height: 150px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+
+/* Voice Recording Styles - Add to assets/css/style.css */
+
+.voice-record-ui {
+    background-color: #f0f2f5;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.voice-timer {
+    font-weight: bold;
+    color: #dc3545;
+    min-width: 45px;
+}
+
+.voice-wave {
+    height: 30px;
+    background-color: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+.wave-animation {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #dc3545 0%, #fff 50%, #dc3545 100%);
+    background-size: 200% 100%;
+    animation: wave 1s linear infinite;
+}
+
+@keyframes wave {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: 0 0;
+    }
+}
+
+/* Voice note styles */
+.voice-note {
+    width: 100%;
+}
+
+.voice-player {
+    width: 100%;
+    height: 40px;
+    border-radius: 20px;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Recording animation */
+.voice-wave .pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+}
+
+/* Recording container */
+#voice-recording-container {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+#recording-timer {
+    font-weight: bold;
+    font-size: 0.9rem;
+}

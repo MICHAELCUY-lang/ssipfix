@@ -36,10 +36,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $recipient_id = intval($_POST['recipient_id']);
         $message = isset($_POST['message']) ? clean_input($_POST['message']) : '';
         
-        if (empty($message)) {
-            $_SESSION['error'] = 'Pesan tidak boleh kosong';
+        // Initialize media variables
+        $media_type = 'none';
+        $media_url = '';
+        
+        // Check if a message or media is provided
+        $has_photo = isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE;
+        $has_video = isset($_FILES['video']) && $_FILES['video']['error'] !== UPLOAD_ERR_NO_FILE;
+        
+        if (empty($message) && !$has_photo && !$has_video) {
+            $_SESSION['error'] = 'Pesan atau media diperlukan';
             header("Location: new.php");
             exit;
+        }
+        
+        // Process media uploads
+        if ($has_photo && $has_video) {
+            $_SESSION['error'] = 'Anda hanya dapat mengunggah satu jenis media per pesan';
+            header("Location: new.php");
+            exit;
+        }
+        
+        if ($has_photo) {
+            $media_type = 'photo';
+            $upload_result = upload_media($_FILES['photo'], 'photo');
+            
+            if (!$upload_result['success']) {
+                $_SESSION['error'] = $upload_result['message'];
+                header("Location: new.php");
+                exit;
+            }
+            
+            $media_url = $upload_result['file_path'];
+        }
+        elseif ($has_video) {
+            $media_type = 'video';
+            $upload_result = upload_media($_FILES['video'], 'video');
+            
+            if (!$upload_result['success']) {
+                $_SESSION['error'] = $upload_result['message'];
+                header("Location: new.php");
+                exit;
+            }
+            
+            $media_url = $upload_result['file_path'];
         }
         
         // Check if recipient exists
@@ -79,12 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$conversation_id, $recipient_id]);
             }
             
-            // Add message
+            // Add message with media if present
             $stmt = $pdo->prepare("
-                INSERT INTO chat_messages (conversation_id, user_id, message)
-                VALUES (?, ?, ?)
+                INSERT INTO chat_messages (conversation_id, user_id, message, media_type, media_url)
+                VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$conversation_id, $user_id, $message]);
+            $stmt->execute([$conversation_id, $user_id, $message, $media_type, $media_url]);
             
             $pdo->commit();
             
@@ -132,7 +172,7 @@ include '../includes/header.php';
                     <?php if (count($users) > 0): ?>
                         <div class="list-group">
                             <?php foreach ($users as $u): ?>
-                                <a href="#" class="list-group-item list-group-item-action user-item" data-user-id="<?php echo $u['user_id']; ?>">
+                                <a href="#" class="list-group-item list-group-item-action user-item" data-user-id="<?php echo $u['user_id']; ?>" data-username="<?php echo htmlspecialchars($u['username']); ?>">
                                     <div class="d-flex align-items-center">
                                         <img src="/ssipfix/assets/images/<?php echo $u['profile_picture']; ?>" 
                                              class="avatar-md rounded-circle me-3" alt="Profile">
@@ -162,12 +202,32 @@ include '../includes/header.php';
                 <h5 class="modal-title">Kirim Pesan ke <span id="recipient-name"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="new.php" method="post">
+            <form action="new.php" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="recipient_id" id="recipient-id">
+                    
+                    <div class="media-preview mb-3" style="display: none;">
+                        <button type="button" class="remove-media-btn"><i class="fas fa-times"></i></button>
+                        <div class="media-preview-element"></div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="message" class="form-label">Pesan</label>
-                        <textarea name="message" id="message" class="form-control" rows="3" required></textarea>
+                        <textarea name="message" id="message" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Media (Opsional)</label>
+                        <div class="d-flex gap-2">
+                            <label class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-image me-1"></i> Tambah Foto
+                                <input type="file" name="photo" class="file-input" style="display: none;" accept="image/*">
+                            </label>
+                            <label class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-video me-1"></i> Tambah Video
+                                <input type="file" name="video" class="file-input" style="display: none;" accept="video/*">
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -190,10 +250,28 @@ include '../includes/header.php';
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 const userId = this.getAttribute('data-user-id');
-                const username = this.querySelector('h6').textContent;
+                const username = this.getAttribute('data-username');
                 
                 document.getElementById('recipient-id').value = userId;
                 document.getElementById('recipient-name').textContent = username;
+                
+                // Clear any previous media
+                const mediaPreview = document.querySelector('.media-preview');
+                mediaPreview.style.display = 'none';
+                const mediaElement = document.querySelector('.media-preview-element');
+                while (mediaElement.firstChild) {
+                    mediaElement.removeChild(mediaElement.firstChild);
+                }
+                
+                // Reset file inputs
+                const fileInputs = document.querySelectorAll('.file-input');
+                fileInputs.forEach(input => {
+                    input.value = '';
+                    input.disabled = false;
+                });
+                
+                // Clear message textarea
+                document.getElementById('message').value = '';
                 
                 messageModal.show();
             });
@@ -214,6 +292,75 @@ include '../includes/header.php';
                 }
             });
         });
+        
+        // Handle file input change for preview
+        const fileInputs = document.querySelectorAll(".file-input");
+        fileInputs.forEach((input) => {
+            input.addEventListener("change", function() {
+                const previewContainer = document.querySelector(".media-preview");
+                const previewElement = document.querySelector(".media-preview-element");
+                
+                // Clear any existing content
+                while (previewElement.firstChild) {
+                    previewElement.removeChild(previewElement.firstChild);
+                }
+                
+                // Disable other file inputs when one is selected
+                const photoInput = document.querySelector("input[name='photo']");
+                const videoInput = document.querySelector("input[name='video']");
+                
+                if (this.name === "photo") {
+                    videoInput.disabled = true;
+                } else if (this.name === "video") {
+                    photoInput.disabled = true;
+                }
+                
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        previewContainer.style.display = "block";
+                        
+                        if (file.type.startsWith("image/")) {
+                            const img = document.createElement("img");
+                            img.src = e.target.result;
+                            img.className = "img-fluid rounded";
+                            previewElement.appendChild(img);
+                        } else if (file.type.startsWith("video/")) {
+                            const video = document.createElement("video");
+                            video.src = e.target.result;
+                            video.controls = true;
+                            video.className = "img-fluid rounded";
+                            previewElement.appendChild(video);
+                        }
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+        
+        // Handle remove media button
+        const removeMediaBtn = document.querySelector(".remove-media-btn");
+        if (removeMediaBtn) {
+            removeMediaBtn.addEventListener("click", function() {
+                const previewContainer = document.querySelector(".media-preview");
+                const previewElement = document.querySelector(".media-preview-element");
+                const fileInputs = document.querySelectorAll(".file-input");
+                
+                // Clear preview element
+                while (previewElement.firstChild) {
+                    previewElement.removeChild(previewElement.firstChild);
+                }
+                
+                previewContainer.style.display = "none";
+                fileInputs.forEach((input) => {
+                    input.value = "";
+                    input.disabled = false; // Re-enable all inputs
+                });
+            });
+        }
     });
 </script>
 
