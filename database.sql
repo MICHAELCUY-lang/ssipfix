@@ -75,7 +75,7 @@ CREATE TABLE chat_messages (
     ADD COLUMN media_url VARCHAR(255) AFTER media_type;
 
     ALTER TABLE chat_messages 
-MODIFY COLUMN media_type ENUM('none', 'photo', 'video', 'voice') DEFAULT 'none';
+    MODIFY COLUMN media_type ENUM('none', 'photo', 'video', 'voice') DEFAULT 'none';
 
 
 
