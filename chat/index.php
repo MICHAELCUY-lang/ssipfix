@@ -663,7 +663,7 @@ include '../includes/header.php';
 
 <?php 
 // Helper function for formatting date in conversation list
-function format_date($date, $short = false) {
+function format_chat_date($date, $short = false) {
     $timestamp = strtotime($date);
     $current_time = time();
     $diff = $current_time - $timestamp;

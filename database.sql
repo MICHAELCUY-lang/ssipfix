@@ -70,8 +70,13 @@ CREATE TABLE chat_messages (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-ALTER TABLE chat_messages
-ADD COLUMN media_type ENUM('none', 'photo', 'video') DEFAULT 'none' AFTER message,
-ADD COLUMN media_url VARCHAR(255) AFTER media_type;
+    ALTER TABLE chat_messages
+    ADD COLUMN media_type ENUM('none', 'photo', 'video') DEFAULT 'none' AFTER message,
+    ADD COLUMN media_url VARCHAR(255) AFTER media_type;
+
+    ALTER TABLE chat_messages 
+MODIFY COLUMN media_type ENUM('none', 'photo', 'video', 'voice') DEFAULT 'none';
+
+
 
 INSERT INTO users (username, is_anonymous) VALUES ('Anonymous', TRUE);
